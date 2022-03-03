@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect
 from data import db_session
 from data.users import User
 from data.jobs import Jobs
-from data.forms import RegisterForm, LoginForm
+from data.forms import RegisterForm, LoginForm, WorksForm
 from flask_login import LoginManager, login_user, logout_user, login_required
 
 app = Flask(__name__)
@@ -70,6 +70,32 @@ def reqister():
         db_sess.commit()
         return redirect('/login')
     return render_template('register.html', title='Регистрация', form=form)
+
+
+@app.route('/add_work', methods=['GET', 'POST'])
+def add_work():
+    form = WorksForm()
+    if form.validate_on_submit():
+        if form.password.data != form.confirm.data:
+            return render_template('register.html', title='Регистрация',
+                                   form=form,
+                                   message="Пароли не совпадают")
+        db_sess = db_session.create_session()
+        if db_sess.query(User).filter(User.email == form.login.data).first():
+            return render_template('register.html', title='Регистрация',
+                                   form=form,
+                                   message="Такой пользователь уже есть")
+        job = Jobs(
+            team_leader=form.team_leader.data,
+            job=form.job.data,
+            work_size=form.work_size.data,
+            collaborations=form.collaborators.data
+        )
+
+        db_sess.add(job)
+        db_sess.commit()
+        return redirect('/')
+    return render_template('add_work.html', title='Добавление работ', form=form)
 
 
 def main():
